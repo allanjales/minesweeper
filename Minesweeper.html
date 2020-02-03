@@ -1,0 +1,988 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Minesweeper</title>
+<meta name="author" content="Allan Jales">
+<meta name="theme-color" content="#ffffff">
+<style>
+
+body{
+}
+
+#gamepad{
+	background-color: #c0c0c0;
+	width: max-content;
+	padding: 15px;
+}
+
+#table{
+    border-spacing: 0px;
+	-webkit-user-select: none;  /* Chrome all / Safari all */
+	-moz-user-select: none;     /* Firefox all */
+	-ms-user-select: none;      /* IE 10+ */
+	user-select: none;          /* Likely future */      
+}
+
+.square{
+	width: 40px;
+	height: 40px;
+	background-color: #c0c0c0;
+	border-style: solid;
+	border-color: #808080;
+	border-width: 2px 0px 0px 2px;
+	cursor: default;
+	text-align: center;
+	font-size: 32px;
+	font-weight: bold;
+	font-family: sans-serif;
+}
+
+.covered{
+	width: 32px;
+	height: 32px;
+	border-style: solid;
+	border-color: #ffffff;
+	border-right-color: #808080;
+	border-bottom-color: #808080;
+	border-width: 5px;
+	cursor: pointer;
+}
+
+.flagged{
+	font-size: 28px;
+}
+
+.square img{
+	width: 100%;
+	height: 100%;
+}
+
+#gamescreen{
+	position: relative;
+}
+
+#gameover-screen{
+	display: flex;
+    align-items: center;
+    justify-content: center;
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background-color: rgba(0,0,255,0.4);
+}
+
+.text{
+	color: #ffffff;
+	text-align: center;
+	font-size: 32px;
+	font-weight: bold;
+	font-family: sans-serif;
+	cursor: default;
+	user-select: none;
+	margin-top: 0;
+}
+
+.restart-button{
+	width: 64px;
+	height: 64px;
+	cursor: pointer;
+	margin: auto;
+	margin-bottom: 8px;
+}
+
+#header{
+	background-color: #c0c0c0;
+	padding: 5px;
+	display: flex;
+	justify-content: space-between;
+	margin-bottom: 15px;
+}
+
+.display{
+    background-color: #000000;
+	min-width: 64px;
+    width: max-content;
+    padding: 5px;
+	color: #ff0000;
+	text-align: center;
+	font-size: 32px;
+	font-weight: bold;
+	font-family: sans-serif;
+	cursor: default;
+	user-select: none;
+    }
+
+.inset
+{
+	border-style: solid;
+	border-color: #808080;
+	border-right-color: #ffffff;
+	border-bottom-color: #ffffff;
+	border-width: 5px;
+}
+
+.outset
+{
+	border-style: solid;
+	border-color: #ffffff;
+	border-right-color: #808080;
+	border-bottom-color: #808080;
+	border-width: 5px;
+}
+
+#restart-button{
+	width: 43px;
+	height: 43px;
+	cursor: pointer;
+	padding: 2px;
+}
+
+#credits{
+	margin-top: 15px;
+}
+
+.text2{
+	color: #00000;
+	text-align: center;
+	font-family: sans-serif;
+	margin-top: 2px;
+	margin-bottom: 0;
+}
+
+</style>
+</head>
+
+<body>
+<div id="gamepad" class="outset">
+	<div id="header" class="inset">
+		<div id="timer" class="display inset" onClick="aiDecision()">0</div>
+		<div>
+			<div id="restart-button" class="outset" onClick="startGame()">
+				<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 106.059 106.059"><g><path fill="#000000" d="M90.546,15.518C69.858-5.172,36.199-5.172,15.515,15.513C-5.173,36.198-5.171,69.858,15.517,90.547c20.682,20.684,54.341,20.684,75.027-0.004C111.23,69.858,111.229,36.2,90.546,15.518z M84.757,84.758c-17.494,17.494-45.96,17.496-63.455,0.002c-17.498-17.497-17.496-45.966,0-63.46C38.796,3.807,67.261,3.805,84.759,21.302C102.253,38.796,102.251,67.265,84.757,84.758z M33.24,38.671c0-3.424,2.777-6.201,6.201-6.201c3.423,0,6.2,2.776,6.2,6.201c0,3.426-2.777,6.202-6.2,6.202C36.017,44.873,33.24,42.097,33.24,38.671z M61.357,38.671c0-3.424,2.779-6.201,6.203-6.201c3.423,0,6.2,2.776,6.2,6.201c0,3.426-2.776,6.202-6.2,6.202S61.357,42.097,61.357,38.671z M76.017,64.068c-3.843,8.887-12.843,14.629-22.927,14.629c-10.301,0-19.354-5.771-23.064-14.703c-0.636-1.529,0.089-3.285,1.62-3.921c0.376-0.155,0.766-0.229,1.15-0.229c1.176,0,2.292,0.695,2.771,1.85c2.777,6.686,9.655,11.004,17.523,11.004c7.69,0,14.528-4.321,17.42-11.011c0.658-1.521,2.424-2.222,3.944-1.563S76.675,62.548,76.017,64.068z"/></g></svg>
+			</div>
+		</div>
+		<div id="remaining-flags" class="display inset">0</div>
+	</div>
+	<div id="gamescreen">
+		<table id="table" class="inset" oncontextmenu="return false;">
+			<tbody id="tbody">
+			</tbody>
+		</table>
+		<div id="gameover-screen">
+			<div>
+				<p class="text">WONNED</p>
+				<div class="restart-button" onClick="startGame()">
+					<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><path d="m416 512h-320c-53.023438 0-96-42.976562-96-96v-320c0-53.023438 42.976562-96 96-96h320c53.023438 0 96 42.976562 96 96v320c0 53.023438-42.976562 96-96 96zm0 0" fill="#ffffff"/><g fill="#000000"><path d="m136 136v69.328125h69.328125zm0 0"/><path d="m205.328125 213.328125h-69.328125c-4.414062 0-8-3.585937-8-8v-69.328125c0-3.230469 1.953125-6.160156 4.945312-7.390625 2.976563-1.21875 6.414063-.5625 8.703126 1.742187l69.328124 69.328126c2.289063 2.289062 2.976563 5.726562 1.742188 8.71875-1.230469 2.992187-4.144531 4.929687-7.390625 4.929687zm-61.328125-16h42.015625l-42.015625-42.015625zm0 0"/><path d="m256 384c-34.160156 0-66.304688-13.328125-90.496094-37.503906-4.160156-4.160156-4.160156-10.910156 0-15.089844 4.160156-4.175781 10.910156-4.160156 15.089844 0 20.160156 20.160156 46.941406 31.265625 75.40625 31.265625 58.816406 0 106.671875-47.855469 106.671875-106.671875s-47.855469-106.671875-106.671875-106.671875c-36.753906 0-72.222656 18.59375-92.574219 48.527344-3.328125 4.863281-9.953125 6.160156-14.816406 2.816406-4.882813-3.328125-6.128906-9.953125-2.816406-14.816406 24.253906-35.695313 66.496093-57.855469 110.207031-57.855469 70.574219 0 128 57.425781 128 128s-57.425781 128-128 128zm0 0"/></g></svg>
+				</div>
+			</div>
+		</div>
+	</div>
+	<p id="credits" class="text2"><b>By Allan Jales</b></p>
+	<p class="text2">Press Space to AI move</p>
+</div>
+</body>
+</html>
+
+<script>
+
+const rows = 20;		//How many rows we should have
+const cols = 15;		//How many columns we should have
+const bombs = 50;		//How many bombs we should have
+
+var beginTime;			//Begin time of current game
+var timer;				//Interval of calling update timer function
+var wonned;				//Null = not known, false = loose, true = won
+var areBombsPlaced;		//To place bombs only on the first click
+
+//const imgForLetters = false;	//If should only show letters
+
+//Number colors
+const colors = {
+	1: '#0200fb',
+	2: '#018005',
+	3: '#fd0000',
+	4: '#020080',
+	5: '#830003',
+	6: '#008080',
+	7: '#000000',
+	8: '#808080',
+}
+
+var game;				//Variable of game matrix
+var map;				//Variable for temporary game matrix
+var previusGames = [];	//Variable of previus states of game
+
+//On load function
+window.onload = function()
+{
+	//Define game as a array
+	game = [];
+	
+	//Define game arrays as a array
+	for (var i = 0; i < rows; i++)
+	{
+		game[i] = [];
+	}
+	
+	//Handle Keydown for IA controls
+	document.addEventListener("keydown", handleKeydown);
+	
+	//Start the game
+	startGame();
+}
+
+//Update timer
+function updateTimer()
+{
+	document.getElementById('timer').innerHTML = ((new Date - beginTime)/1000).toFixed(0);
+}
+
+//Update timer
+function updateRemainingFlags()
+{
+	document.getElementById('remaining-flags').innerHTML = bombs - flagsCount();
+}
+
+//Start the game function
+function startGame()
+{
+	//Not known if is own
+	wonned = null;
+	
+	//Bombs are not placed
+	areBombsPlaced = false;	
+
+	//Saves begin time
+	beginTime = new Date;
+	
+	//Update current time
+	updateTimer();
+	
+	//Update timer every second
+	timer = setInterval(updateTimer, 1000)
+
+	//Define each point
+	for (var i = 0; i < rows; i++)
+	{
+		for (var j = 0; j < cols; j++)
+		{
+			game[i][j] = {isCovered: true, isFlagged: false, whatHiddens: null};
+		}
+	}
+	
+	//Draw
+	draw();
+	
+	//Removes gameover screen
+	document.getElementById('gameover-screen').style.display = 'none';
+}
+
+//Places bombs in the table
+function placeBombs(x = undefined, y = undefined)
+{
+	//List of all points position in game
+	var list = [];
+
+	//List all positions only
+	for (var i = 0; i < rows; i++)
+	{
+		for (var j = 0; j < cols; j++)
+		{
+			//Add to the list
+			list.push({x: i, y: j})
+		}
+	}
+	
+	//If positions are defined
+	if (x && y)
+	{
+		//To each position around
+		for (var i = -1; i <= 1; i++)
+		{
+			for (var j = -1; j <= 1; j++)
+			{
+				//Pick the index of array with those values
+				var pickedIndex = getObjectPositionIndex(list, {x: x+i, y: y+j})
+				
+				//If index is found
+				if (pickedIndex >= 0)
+				{
+					//Removes the point position from list
+					list.splice(pickedIndex, 1);
+				}
+			}
+		}
+	}
+	
+	//For n bombs
+	for (var i = 0; i < bombs; i++)
+	{
+		//Pick one place of the list
+		var pickedIndex = Math.floor(Math.random()*list.length)
+		var pickedObj = list[pickedIndex];
+		
+		//Define picked place as bomb
+		game[pickedObj.x][pickedObj.y].whatHiddens = -1;
+		
+		//Removes the point position from list
+		list.splice(pickedIndex, 1)
+	}
+	
+	//Count what numbers should show in each square
+	bombCounterAroundForAll();
+}
+
+function getObjectPositionIndex(array, object)
+{
+	//Stringfied object
+	object = JSON.stringify(object)
+
+	//For each element of array
+	for (var i = 0; i < array.length; i++)
+	{
+		if (JSON.stringify(array[i]) == object)
+		{
+			return i;
+		}
+	}
+	
+	//If not found
+	return -1;
+}
+
+//count how many adjacent bombs there is
+function bombCounterAroundForAll()
+{
+	//For each position
+	for (var i = 0; i < rows; i++)
+	{
+		for (var j = 0; j < cols; j++)
+		{
+			//If is not a bomb
+			if (game[i][j].whatHiddens != -1)
+			{
+				//Discover how many bombs there is
+				game[i][j].whatHiddens = bombAroundCounter(i, j);
+			}
+		}
+	}
+}
+
+//count how many adjacent bombs there is
+function bombAroundCounter(x, y)
+{	
+	//Quantity of bombs counted
+	var counter = 0;
+	
+	//For each position around
+	for (var i = -1; i <= 1; i++)
+	{
+		for (var j = -1; j <= 1; j++)
+		{
+			//If this position exists and it is not itself
+			if (game[x+i] && game[x+i][y+j] && !(i == 0 && j == 0))
+			{				
+				//If is a bomb
+				if (game[x+i][y+j].whatHiddens == -1)
+				{
+					//Counter increases
+					counter++;
+				}
+			}
+		}
+	}
+	
+	//Returns how many bombs there is around
+	return counter;
+}
+
+//Check if the clicked point is a bomb
+function checkExplosion(x, y)
+{
+	//If there is a bomb
+	if (game[x][y].whatHiddens == -1)
+	{
+		//Notify loose
+		wonned = false;
+	
+		//Reveal table
+		revealAllTable();
+		
+		//Stop timer
+		clearInterval(timer);
+	}
+}
+
+//Reveals all the table
+function revealAllTable(hideTable = false)
+{
+	//For each position in the table
+	for (var i = 0; i < rows; i++)
+	{
+		for (var j = 0; j < cols; j++)
+		{
+			//Uncover it
+			game[i][j].isCovered = hideTable ? true : false;
+		}
+	}
+	
+	//Redraws table
+	draw();
+}
+
+//Reveals a part of the table
+function revealArea(x, y)
+{
+	//If clicked square is a space with no bomb around
+	if (game[x][y].whatHiddens == 0)
+	{
+		//Reveal every space
+		while (revealAreaStep1())
+		{
+			//Nothing!
+		}
+		
+		//Redraws table
+		draw();
+	}
+}
+
+//Reveal step
+function revealAreaStep1()
+{
+	//To future comparision
+	var beforeMap = JSON.stringify(game);
+	
+	//For each position in the map
+	for (var i = 0; i < rows; i++)
+	{
+		for (var j = 0; j < cols; j++)
+		{
+			//If it is a space with no bombs around
+			if (game[i][j].whatHiddens == 0 && game[i][j].isCovered === false)
+			{
+				//Reveal around spaces
+				revealAreaStep2(i, j);
+			}
+		}
+	}
+	
+	//Return true if should do again
+	if (beforeMap != JSON.stringify(game))
+		return true;
+	else
+		return false;
+}
+
+//Reveal spaces around x, y
+function revealAreaStep2(x, y)
+{
+	//For each position around
+	for (var i = -1; i <= 1; i++)
+	{
+		for (var j = -1; j <= 1; j++)
+		{
+			//If this position exists and it is not itself
+			if (game[x+i] && game[x+i][y+j] && !(i == 0 && j == 0))
+			{
+				//Reveal
+				game[x+i][y+j].isCovered = false;
+			}
+		}
+	}
+}
+
+//Return how many flags are in use
+function flagsCount()
+{
+	//Quantity of flags found
+	var counter = 0;
+	
+	//For each position
+	for (var i = 0; i < rows; i++)
+	{
+		for (var j = 0; j < cols; j++)
+		{
+			//If is flagged
+			if (game[i][j].isFlagged === true)
+			{
+				//Count
+				counter++;
+			}
+		}
+	}
+	
+	//Return flags counted
+	return counter;
+}
+
+//Return how many flags are in use
+function coveredBlocksCount()
+{
+	//Quantity of flags found
+	var counter = 0;
+	
+	//For each position
+	for (var i = 0; i < rows; i++)
+	{
+		for (var j = 0; j < cols; j++)
+		{
+			//If is flagged
+			if (game[i][j].isCovered === true)
+			{
+				//Count
+				counter++;
+			}
+		}
+	}
+	
+	//Return flags counted
+	return counter;
+}
+
+//Draw on screen function
+function draw()
+{
+	//Update remaing flags number
+	updateRemainingFlags();
+
+	//Get table element
+	var tbody = document.getElementById('tbody');
+	
+	//Delete all body
+	tbody.innerHTML = ''
+
+	//For each column
+	for (var j = 0; j < cols; j++)
+	{
+		//Create a new row
+		var row = tbody.appendChild(document.createElement('tr'));
+		
+		//Foreach row
+		for (var i = 0; i < rows; i++)
+		{
+			//Set the element
+			var element = document.createElement('td');
+			
+			//Set position as attribute in element
+			element.setAttribute('x', i);
+			element.setAttribute('y', j);
+			
+			//Add event listener
+			element.setAttribute('onClick', 		'handleLeftClick(this)');
+			element.setAttribute('oncontextmenu', 	'handleRightClick(this)');
+			
+			//Add class to element
+			element.classList.add('square');
+			
+			//Show or not show element
+			if (game[i][j].isCovered)
+			{
+				//Add class .covered
+				element.classList.add('covered');
+				
+				//If is flagged
+				if (game[i][j].isFlagged == true)
+				{
+					//Shows F
+					element.innerHTML = 'F';
+					
+					//Add class to element
+					element.classList.add('flagged');
+					
+					//Change the color to red
+					element.style.color = '#fd0000';
+					
+					/*
+					//Set the new element inside
+					var newElement = document.createElement('img');
+					
+					//Add class to element
+					element.classList.add('flagged');
+					
+					//Add source of new element
+					newElement.src = 'imgs/flag.svg';
+					
+					//Add alternative to new element
+					newElement.alt = 'F';
+					
+					//Shows the img inside element
+					element.appendChild(newElement);
+					*/
+				}
+			}
+			else
+			{
+				//If is a number greater than 0
+				if (game[i][j].whatHiddens > 0)
+				{
+					//Shows the number
+					element.innerHTML = game[i][j].whatHiddens;
+					
+					//Change the color of number
+					element.style.color = colors[game[i][j].whatHiddens];
+				}
+				
+				//If is a bomb
+				if (game[i][j].whatHiddens == -1)
+				{
+					//Shows B
+					element.innerHTML = 'B';
+				}
+			}
+		
+			//Create the element in the row
+			row.appendChild(element);
+		}
+	}
+}
+
+function handleLeftClick(selected)
+{
+	//Get Position of clicked object
+	var x = selected.getAttribute('x');
+	var y = selected.getAttribute('y');
+	
+	//Parse to integer
+	x = parseInt(x, 10);
+	y = parseInt(y, 10);
+	
+	//If square is unflagged
+	if (game[x][y].isFlagged === false && game[x][y].isCovered)
+	{	
+		//If bombs are not placed
+		if (areBombsPlaced === false)
+		{
+			//Change the variable
+			areBombsPlaced = true;		
+	
+			//Place bombs in the table
+			placeBombs(x, y);
+		}
+
+		//Saves atual states of game
+		saveState();
+
+		//Uncover the selected element
+		game[x][y].isCovered = false;
+		
+		//Redraw whole table
+		draw();
+		
+		//Reveal area
+		revealArea(x, y);
+		
+		//Check if exploded
+		checkExplosion(x, y);
+		
+		//If win the game
+		if (coveredBlocksCount() <= bombs && wonned != false)
+		{
+			//Stop timer
+			clearInterval(timer);
+			
+			//Define as wonned game
+			wonned = true;
+	
+			//Show gameover screen
+			document.getElementById('gameover-screen').style.display = 'flex';
+		}
+	}
+}
+
+function handleRightClick(selected)
+{
+	//Saves atual states of game
+	saveState();
+
+	//Get Position of clicked object
+	var x = selected.getAttribute('x');
+	var y = selected.getAttribute('y');
+	
+	//If square is covered
+	if (game[x][y].isCovered === true)
+	{		
+		//If is flagged
+		if (game[x][y].isFlagged === true)
+		{
+			//Unflags it
+			game[x][y].isFlagged = false;
+		}
+		else
+		{
+			//If there is flags remaing
+			if (flagsCount() < bombs)
+			{
+				//Flags it
+				game[x][y].isFlagged = true;
+			}
+		}
+
+		//Redraw whole table
+		draw();
+	}
+}
+
+</script>
+
+<script>
+
+//Handle keydown
+function handleKeydown(event)
+{
+	//Select the key function
+	const keyFunction = acceptedKeysCode[event.code];
+	
+	//If is accepted key
+	if (keyFunction)
+	{
+		//Treats like function
+		keyFunction();
+	}
+}
+
+//Accepted keys function
+const acceptedKeysCode = 
+{
+	Space()
+	{
+		aiDecision();
+	},
+	Backspace()
+	{
+		undo();
+	}
+}
+
+//AI choose what to do
+function aiDecision()
+{
+	//If the game is over
+	if (wonned != null)
+	{
+		//Restart game
+		startGame();
+	}
+	else
+	{
+		//Get what should flag
+		shouldFlag = whichShouldIFlag();
+		
+		//If point exists
+		if (shouldFlag)
+		{
+			//Right clicks on it
+			aiClick(shouldFlag.x, shouldFlag.y, false)
+			
+			//Break function
+			return true;
+		}
+		
+		//Get what should flag
+		shouldClick = whichShouldIClick();
+		
+		//If point exists
+		if (shouldClick)
+		{
+			//Right clicks on it
+			aiClick(shouldClick.x, shouldClick.y, true)
+			
+			//Break function
+			return true;
+		}
+		
+		aiRandomLeftClick();
+		
+	}
+}
+
+
+//Random Left Click
+function aiRandomLeftClick()
+{
+	//List of all covered points
+	var list = [];
+
+	//Fills the list
+	for (var i = 0; i < rows; i++)
+	{
+		for (var j = 0; j < cols; j++)
+		{
+			//If is covered
+			if (game[i][j].isCovered === true && game[i][j].isFlagged === false)
+			{
+				//Add to the list
+				list.push({x: i, y: j})
+			}
+		}
+	}
+
+	//Get random point from the list
+	var point = list[Math.floor(Math.random()*list.length)];
+	var x = point.x;
+	var y = point.y;
+
+	//Left click in picked point
+	aiClick(x, y, true);
+}
+
+
+//Returns squares around with this property value
+function findSquaresAround(x, y, property, value)
+{
+	//Covered squares around
+	var squares = [];
+	
+	//For each position around
+	for (var i = -1; i <= 1; i++)
+	{
+		for (var j = -1; j <= 1; j++)
+		{
+			//If this position exists and it is not itself
+			if (game[x+i] && game[x+i][y+j] && !(i == 0 && j == 0))
+			{				
+				//If property matchs
+				if (game[x+i][y+j][property] === value)
+				{
+					//Add to the list
+					squares.push({x: x+i, y: y+j})
+				}
+			}
+		}
+	}
+	
+	//Returns squares around
+	return squares;
+}
+
+//Get one point which it show flag
+function whichShouldIFlag()
+{
+	//For each position in the table
+	for (var i = 0; i < rows; i++)
+	{
+		for (var j = 0; j < cols; j++)
+		{
+			//If is not covered and is a number
+			if (game[i][j].isCovered === false && game[i][j].whatHiddens > 0)
+			{
+				//Returns how many blocks are covered around
+				var coveredSquaresAround = findSquaresAround(i, j, 'isCovered', true);
+				
+				//If there is same amount of bombs around as covered squares
+				if (game[i][j].whatHiddens == coveredSquaresAround.length)
+				{
+					//Pass through each choosen square
+					for (var k = 0; k < coveredSquaresAround.length; k++)
+					{
+						//If the block is not flagged, returns it
+						if (game[coveredSquaresAround[k].x][coveredSquaresAround[k].y].isFlagged === false)
+							return coveredSquaresAround[k];
+					}
+				}
+			}
+		}
+	}
+	
+	//If is not found
+	return undefined;
+}
+
+
+//Get one point which it show flag
+function whichShouldIClick()
+{
+	//For each position in the table
+	for (var i = 0; i < rows; i++)
+	{
+		for (var j = 0; j < cols; j++)
+		{
+			//If is not covered and is a number
+			if (game[i][j].isCovered === false && game[i][j].whatHiddens > 0)
+			{
+				//Returns how many blocks are covered and flagged around
+				var coveredSquaresAround = findSquaresAround(i, j, 'isCovered', true);
+				var flaggedSquaresAround = findSquaresAround(i, j, 'isFlagged', true);
+				
+				//If there is same amount of bombs around as flagged squares
+				if (game[i][j].whatHiddens == flaggedSquaresAround.length)
+				{
+					//Pass through each choosen block
+					for (var k = 0; k < coveredSquaresAround.length; k++)
+					{
+						//If the block is not flagged, returns it
+						if (game[coveredSquaresAround[k].x][coveredSquaresAround[k].y].isFlagged === false)
+							return coveredSquaresAround[k];
+					}
+				}
+			}
+		}
+	}
+	
+	//If is not found
+	return undefined;
+}
+
+//Act likes a player click
+function aiClick(x, y, isLeft = true)
+{
+	//Get the element in those coordinates
+	var element = document.querySelector('[x="' + x.toString() + '"][y="' + y.toString() + '"]');
+
+	if (isLeft === true)
+	{
+		//Left click in picked element
+		handleLeftClick(element);
+		return true;
+	}
+	else
+	{
+		//Right click in picked element
+		handleRightClick(element);
+		return true;
+	}
+	
+	//If could not
+	return false;
+}
+
+//Undo move
+function undo()
+{
+	//If exists any game before
+	if (previusGames.length > 0)
+	{
+		//Update all game matrix
+		game = JSON.parse(previusGames[0]);
+
+		//Remove one of begging the array
+		previusGames.shift();
+
+		//Redraw screen
+		draw();
+
+		//Return true then
+		return true;
+	}
+
+	//If couldn't
+	return false;
+}
+
+//Saves atual state of game
+function saveState()
+{
+	//Maximum states saved
+	const maxGames = 150;
+
+	//Add in begining of array atual game
+	previusGames.unshift(JSON.stringify(game));
+
+	//Limits the size of previus states removing the end of list
+	while (previusGames.length > maxGames-1) {previusGames.pop();}
+}
+
+</script>
